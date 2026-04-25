@@ -44,11 +44,11 @@ struct ContentView: View {
                     .clipShape(.capsule)
 
                 ZStack {
-                    ForEach(0..<cards.count, id: \.self) { index in
-                        CardView(card: cards[index]) {
-                           withAnimation {
-                               removeCard(at: index)
-                           }
+                    ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
+                        CardView(card: card) { correct in
+                            withAnimation {
+                                answerTopCard(correct: correct)
+                            }
                         }
                         .stacked(at: index, in: cards.count)
                         .allowsHitTesting(index == cards.count - 1)
@@ -93,7 +93,7 @@ struct ContentView: View {
                     HStack {
                         Button {
                             withAnimation {
-                                removeCard(at: cards.count - 1)
+                                answerTopCard(correct: false)
                             }
                         } label: {
                             Image(systemName: "xmark.circle")
@@ -108,7 +108,7 @@ struct ContentView: View {
 
                         Button {
                             withAnimation {
-                                removeCard(at: cards.count - 1)
+                                answerTopCard(correct: true)
                             }
                         } label: {
                             Image(systemName: "checkmark.circle")
@@ -142,9 +142,15 @@ struct ContentView: View {
         .onAppear(perform: resetCards)
     }
 
-    func removeCard(at index: Int) {
-        guard index >= 0 else { return }
-        cards.remove(at: index)
+    /// Handles the top card. Wrong answers are moved to the back of the stack so they come up again after the rest of the deck.
+    func answerTopCard(correct: Bool) {
+        guard !cards.isEmpty else { return }
+        if correct {
+            cards.removeLast()
+        } else {
+            let card = cards.removeLast()
+            cards.insert(card, at: 0)
+        }
 
         if cards.isEmpty {
             isActive = false
